@@ -7,6 +7,7 @@
 #define IS_EXE 1
 #define IS_NOT_EXE 0
 #define SHT_SYMTAB 2
+#define SHT_DYNSYM 11
 #define ET_EXEC 2
 #define GLOBAL "GLOBAL"
 #define NOT_FOUND_IN_SYMTAB 0
@@ -20,8 +21,8 @@
  *          Functions           *
  ********************************/
 int isExe(FILE* f);
-int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr address);
-Elf64_Addr getAddress(Elf64_Sym *symtab);
+int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr* address);
+Elf64_Addr* getAddress(Elf64_Sym *symtab, Elf64_Ehdr* header);
 
 int main(char* func, char* file) 
 {
@@ -60,7 +61,7 @@ int isExe(Elf64_Ehdr* header) {
     return IS_EXE;
 }
 
-int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr address) {
+int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr* address) {
     Elf64_Shdr* sec_table = (Elf64_Shdr*)((char*)header + header->e_shoff);
     Elf64_Sym *symtab;
     int symbol_table_size;
@@ -83,7 +84,7 @@ int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr address) {
     for(int i = 0; i < symbol_table_size; i++) {
         if(strcmp(func, symtab[i].st_name)) {
             if (strcmp(ELF64_ST_BIND(symtab[i].st_info), GLOBAL)) {
-                *address = getAddress(symtab[i]);
+                *address = getAddress(&symtab[i], header);
                 return FOUND_IN_SYMTAB_AND_GLOBAL;
             }
             else
@@ -93,11 +94,29 @@ int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr address) {
     return NOT_FOUND_IN_SYMTAB;
 }
 
-Elf64_Addr getAddress(Elf64_Sym *symtab) {
+Elf64_Addr* getAddress(Elf64_Sym *symtab, Elf64_Ehdr* header) {
     if(symtab->st_shndx != UNDEFINED) {
         return symtab->st_value;
     }
     else {
+        Elf64_Shdr* sec_table = (Elf64_Shdr*)((char*)header + header->e_shoff);
+        Elf64_Dyn *dynsym;
+        int dynamic_symbol_size;
+
+        for (int i = 0; i < header->e_shnum; i++) {
+            if (sec_table[i].sh_type == SHT_DYNSYM) {
+                dynsym = (Elf64_Dyn *)((char *)header + sec_table[i].sh_offset);
+                dynamic_symbol_size = sec_table[i].sh_size;
+                break;
+            }
+        }
+        // now holding the dynamic symbol table
+
+        for(int j=0; j<dynamic_symbol_size; j++)
+        {
+            if(dynsym[j] == symtab)
+                retrun 
+        }
 
     }
 }
