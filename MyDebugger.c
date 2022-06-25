@@ -101,7 +101,7 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
 
     fseek(exe, strtab->sh_size, SEEK_SET);
     for(int i = 0; i < symbol_table_size; i++) {
-        const char* strname = (const char*)malloc(sizeof(strtab->sh_entsize));
+        char* strname = (char*)malloc(sizeof(strtab->sh_entsize));
         fseek(exe, strtab->sh_entsize, SEEK_CUR);
         fread(strname, sizeof(*strname), 1, exe);
         if(strcmp(func_name, strname)) {
