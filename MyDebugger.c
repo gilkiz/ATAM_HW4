@@ -142,7 +142,8 @@ Elf64_Addr getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header) {
         }
 
         //If we got here then something is wrong
-        return NULL;
+        
+        return 0;
         
     }
 }
