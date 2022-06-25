@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "elf64.h"
 
 /********************************
@@ -20,9 +21,9 @@
 /********************************
  *          Functions           *
  ********************************/
-int isExe(FILE* f);
+int isExe(Elf64_Ehdr* header);
 int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr* address);
-Elf64_Addr* getAddress(Elf64_Sym *symtab, Elf64_Ehdr* header);
+Elf64_Addr* getAddress(char* func, Elf64_Sym *symtab, Elf64_Ehdr* header);
 
 int main(char* func, char* file) 
 {
@@ -37,7 +38,7 @@ int main(char* func, char* file)
 
     Elf64_Addr* address;
 
-    int funcExistness = funcExists(atoi(func), &header, address);
+    int funcExistness = funcExists(func, &header, address);
     if(funcExistness == NOT_FOUND_IN_SYMTAB) {
         printf("PRF:: %s not found!\n", func);
         fclose(exe);
