@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
     char* program = argv[1];
     Elf64_Ehdr* header = (Elf64_Ehdr*)malloc(sizeof(Elf64_Ehdr));
     FILE* exe = fopen(program, "r");
-    fread(header, sizeof(*header), 1, exe);
+    fread(header, sizeof(Elf64_Ehdr), 1, exe);
     return 0;
     if(!isExe(header)) {
         printf("PRF:: %s not an executable! :(\n", header->e_ident);
