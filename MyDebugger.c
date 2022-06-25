@@ -84,6 +84,8 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
     int symbol_table_size;
     int not_found = 1;
     for (int i = 0; i < header->e_shnum; i++) {
+
+        printf("%d\n", sec_table[i].sh_type);
         if (sec_table[i].sh_type == SHT_SYMTAB) {
             symtab = (Elf64_Sym *)((char *)header + sec_table[i].sh_offset);
             symbol_table_size = sec_table[i].sh_size;
@@ -94,7 +96,6 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
 
     if(not_found) {
         free(strtab);
-        printf("SHIT\n");
         return NOT_FOUND_IN_SYMTAB;
     }
 
@@ -102,7 +103,7 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
     for(int i = 0; i < symbol_table_size; i++) {
         const char* strname = (const char*)malloc(sizeof(strtab->sh_entsize));
         fseek(exe, strtab->sh_entsize, SEEK_CUR);
-        fread(&strname, sizeof(strname), 1, exe);
+        fread(strname, sizeof(*strname), 1, exe);
         if(strcmp(func_name, strname)) {
             if (ELF64_ST_BIND(symtab[i].st_info) == GLOBAL) {
                 *address = getAddress(func_name, &symtab[i], header);
