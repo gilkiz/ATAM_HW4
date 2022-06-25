@@ -85,7 +85,7 @@ int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr* address) {
     for(int i = 0; i < symbol_table_size; i++) {
         if(strcmp(func, symtab[i].st_name)) {
             if (strcmp(ELF64_ST_BIND(symtab[i].st_info), GLOBAL) == 0) {
-                *address = getAddress(&symtab[i], header);
+                *address = getAddress(func, &symtab[i], header);
                 return FOUND_IN_SYMTAB_AND_GLOBAL;
             }
             else
