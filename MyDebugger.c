@@ -27,8 +27,8 @@ Elf64_Addr* getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header);
 
 int main(int argc, char* argv[]) 
 {
-    char* func_name = argv[1];
-    char* program = argv[2];
+    char* func_name = argv[0]; //maybe inddex 1
+    char* program = argv[1];
     Elf64_Ehdr header;
     FILE* exe = fopen(program, "r");
     fread(&header, sizeof(header), 1, exe);
@@ -89,7 +89,7 @@ int funcExists(char* func_name, Elf64_Ehdr* header, Elf64_Addr* address) {
 
     
     for(int i = 0; i < symbol_table_size; i++) {
-        if(strcmp(func_name, symtab[i].st_name)) {
+        if(strcmp(func_name, (char*)symtab[i].st_name)) {
             if (strcmp(ELF64_ST_BIND(symtab[i].st_info), GLOBAL) == 0) {
                 *address = getAddress(func_name, &symtab[i], header);
                 return FOUND_IN_SYMTAB_AND_GLOBAL;
