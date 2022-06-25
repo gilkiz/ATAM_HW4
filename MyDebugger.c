@@ -25,7 +25,7 @@
  ********************************/
 int isExe(Elf64_Ehdr* header);
 int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* address);
-Elf64_Addr* getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header);
+Elf64_Addr getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header);
 
 int main(int argc, char* argv[]) 
 {
@@ -101,7 +101,7 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
         fread(&strname, sizeof(strname), 1, exe);
         if(strcmp(func_name, strname)) {
             if (ELF64_ST_BIND(symtab[i].st_info) == GLOBAL) {
-                address = getAddress(func_name, &symtab[i], header);
+                *address = getAddress(func_name, &symtab[i], header);
                 free(strtab);
                 return FOUND_IN_SYMTAB_AND_GLOBAL;
             }
@@ -115,7 +115,7 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
     return NOT_FOUND_IN_SYMTAB;
 }
 
-Elf64_Addr* getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header) {
+Elf64_Addr getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header) {
     if(symtab->st_shndx != UNDEFINED) {
         return symtab->st_value;
     }
