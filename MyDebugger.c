@@ -78,20 +78,19 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
     fread(&strtab, sizeof(strtab), 1, exe);
     Elf64_Sym *symtab;
     int symbol_table_size;
-    int not_found = 0;
+    int not_found = 1;
     for (int i = 0; i < header->e_shnum; i++) {
         if (sec_table[i].sh_type == SHT_SYMTAB) {
             symtab = (Elf64_Sym *)((char *)header + sec_table[i].sh_offset);
             symbol_table_size = sec_table[i].sh_size;
+            not_found = 0;
             break;
         }
-
-        if(i ==  header->e_shnum-1)
-            not_found = 1;
     }
 
     if(not_found) {
         return NOT_FOUND_IN_SYMTAB;
+        printf("SHIT");
         free(strtab);
     }
 
