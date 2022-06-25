@@ -11,7 +11,7 @@
 #define SHT_SYMTAB 2
 #define SHT_DYNSYM 11
 #define ET_EXEC 2
-#define GLOBAL "GLOBAL"
+#define GLOBAL 1
 #define NOT_FOUND_IN_SYMTAB 0
 #define FOUND_IN_SYMTAB_BUT_LOCAL 1
 #define FOUND_IN_SYMTAB_AND_GLOBAL 2
@@ -94,14 +94,14 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
         free(strtab);
     }
 
-    fseek(exe, strtab, SEEK_SET);
+    fseek(exe, *strtab, SEEK_SET);
     for(int i = 0; i < symbol_table_size; i++) {
         const char* strname = (const char*)malloc(sizeof(strtab->sh_entsize));
         fseek(exe, strtab->sh_entsize, SEEK_CUR);
         fread(&strname, sizeof(strname), 1, exe);
         if(strcmp(func_name, strname)) {
-            if (strcmp(ELF64_ST_BIND(symtab[i].st_info), GLOBAL) == 0) {
-                *address = getAddress(func_name, &symtab[i], header);
+            if (ELF64_ST_BIND(symtab[i].st_info) == GLOBAL) {
+                address = getAddress(func_name, &symtab[i], header);
                 free(strtab);
                 return FOUND_IN_SYMTAB_AND_GLOBAL;
             }
