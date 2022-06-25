@@ -38,6 +38,7 @@ int main(int argc, char* argv[])
     if(isExe(header) == IS_NOT_EXE) {
         printf("PRF:: %s not an executable! :(\n", argv[2]);
         fclose(exe);
+        free(header);
         return FAILURE;
     }
 
@@ -47,11 +48,13 @@ int main(int argc, char* argv[])
     if(funcExistness == NOT_FOUND_IN_SYMTAB) {
         printf("PRF:: %s not found!\n", func_name);
         fclose(exe);
+        free(header);
         return FAILURE;
     }
     else if(funcExistness == FOUND_IN_SYMTAB_BUT_LOCAL) {
         printf("PRF:: %s is not a global symbol! :(\n", func_name);
         fclose(exe);
+        free(header);
         return FAILURE;
     }
     
@@ -62,6 +65,7 @@ int main(int argc, char* argv[])
 
 
     fclose(exe);
+    free(header);
     return SUCCESS;
 }
 
@@ -74,8 +78,8 @@ int isExe(Elf64_Ehdr* header) {
 int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* address) {
     Elf64_Shdr* sec_table = (Elf64_Shdr*)((char*)header + header->e_shoff);
     fseek(exe, header->e_shstrndx, SEEK_SET);
-    Elf64_Shdr* strtab = (Elf64_Shdr*)malloc(sizeof(Elf64_Shdr));
-    fread(&strtab, sizeof(strtab), 1, exe);
+    Elf64_Shdr* strtab = (Elf64_Shdr*)malloc(sizeof(*strtab));
+    fread(strtab, sizeof(*strtab), 1, exe);
     Elf64_Sym *symtab;
     int symbol_table_size;
     int not_found = 1;
