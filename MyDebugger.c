@@ -85,7 +85,7 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
     int not_found = 1;
     for (int i = 0; i < header->e_shnum; i++) {
 
-        printf("%d\n", (sec_table + i*sec_table->sh_entsize)->sh_type));
+        printf("%d\n", (sec_table + i*sec_table->sh_entsize)->sh_type);
         if ((sec_table + i*sec_table->sh_entsize)->sh_type == SHT_SYMTAB) {
             symtab = (Elf64_Sym *)((char *)header + sec_table[i].sh_offset);
             symbol_table_size = sec_table[i].sh_size;
