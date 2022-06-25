@@ -70,6 +70,7 @@ int isExe(Elf64_Ehdr* header) {
 
 int funcExists(char* func_name, Elf64_Ehdr* header, Elf64_Addr* address) {
     Elf64_Shdr* sec_table = (Elf64_Shdr*)((char*)header + header->e_shoff);
+    Elf64_Half* strtab = header->e_shstrndx;
     Elf64_Sym *symtab;
     int symbol_table_size;
     int not_found = 0;
@@ -89,7 +90,7 @@ int funcExists(char* func_name, Elf64_Ehdr* header, Elf64_Addr* address) {
 
     
     for(int i = 0; i < symbol_table_size; i++) {
-        if(strcmp(func_name, (char*)symtab[i].st_name)) {
+        if(strcmp(func_name, strtab[symtab[i].st_name])) {
             if (strcmp(ELF64_ST_BIND(symtab[i].st_info), GLOBAL) == 0) {
                 *address = getAddress(func_name, &symtab[i], header);
                 return FOUND_IN_SYMTAB_AND_GLOBAL;
