@@ -37,7 +37,7 @@ int main(char* func, char* file)
 
     Elf64_Addr* address;
 
-    int funcExistness = funcExists(func, &header, address);
+    int funcExistness = funcExists(atoi(func), &header, address);
     if(funcExistness == NOT_FOUND_IN_SYMTAB) {
         printf("PRF:: %s not found!\n", func);
         fclose(exe);
@@ -83,7 +83,7 @@ int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr* address) {
     
     for(int i = 0; i < symbol_table_size; i++) {
         if(strcmp(func, symtab[i].st_name)) {
-            if (strcmp(ELF64_ST_BIND(symtab[i].st_info), GLOBAL)) {
+            if (strcmp(ELF64_ST_BIND(symtab[i].st_info), GLOBAL) == 0) {
                 *address = getAddress(&symtab[i], header);
                 return FOUND_IN_SYMTAB_AND_GLOBAL;
             }
@@ -94,7 +94,7 @@ int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr* address) {
     return NOT_FOUND_IN_SYMTAB;
 }
 
-Elf64_Addr* getAddress(Elf64_Sym *symtab, Elf64_Ehdr* header) {
+Elf64_Addr* getAddress(char* func, Elf64_Sym *symtab, Elf64_Ehdr* header) {
     if(symtab->st_shndx != UNDEFINED) {
         return symtab->st_value;
     }
@@ -114,9 +114,14 @@ Elf64_Addr* getAddress(Elf64_Sym *symtab, Elf64_Ehdr* header) {
 
         for(int j=0; j<dynamic_symbol_size; j++)
         {
-            if(dynsym[j] == symtab)
-                retrun 
+            if(strcmp(dynsym[j].d_tag, func) == 0)
+            {
+                return dynsym[j].d_un.d_ptr;
+            }
         }
 
+        //If we got here then something is wrong
+        return NULL;
+        
     }
 }
