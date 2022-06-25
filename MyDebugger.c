@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "elf64.h"
 
@@ -32,7 +33,7 @@ int main(int argc, char* argv[])
     Elf64_Ehdr* header = (Elf64_Ehdr*)malloc(sizeof(Elf64_Ehdr));
     FILE* exe = fopen(program, "r");
     fread(&header, sizeof(header), 1, exe);
-    if(!isExe(&header)) {
+    if(!isExe(header)) {
         printf("PRF:: %s not an executable! :(\n", header->e_ident);
         fclose(exe);
         return FAILURE;
@@ -40,7 +41,7 @@ int main(int argc, char* argv[])
 
     Elf64_Addr* address;
 
-    int funcExistness = funcExists(func_name, &header, exe, address);
+    int funcExistness = funcExists(func_name, header, exe, address);
     if(funcExistness == NOT_FOUND_IN_SYMTAB) {
         printf("PRF:: %s not found!\n", func_name);
         fclose(exe);
