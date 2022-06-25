@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 {
     char* func_name = argv[0]; //maybe inddex 1
     char* program = argv[1];
-    Elf64_Ehdr header;
+    Elf64_Ehdr header = (Elf64_Ehdr)malloc(sizeof(Elf64_Ehdr));
     FILE* exe = fopen(program, "r");
     fread(&header, sizeof(header), 1, exe);
     if(!isExe(&header)) {
@@ -71,7 +71,7 @@ int isExe(Elf64_Ehdr* header) {
 int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* address) {
     Elf64_Shdr* sec_table = (Elf64_Shdr*)((char*)header + header->e_shoff);
     fseek(exe, header->e_shstrndx, SEEK_SET);
-    Elf64_Shdr* strtab;
+    Elf64_Shdr strtab = (Elf64_Shdr)malloc(sizeof(Elf64_Shdr));
     fread(&strtab, sizeof(strtab), 1, exe);
     Elf64_Sym *symtab;
     int symbol_table_size;
@@ -87,20 +87,29 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
             not_found = 1;
     }
 
-    if(not_found)
+    if(not_found) {
         return NOT_FOUND_IN_SYMTAB;
+        free(strtab);
+    }
 
-    
+    fseek(exe, strtab, SEEK_SET);
     for(int i = 0; i < symbol_table_size; i++) {
-        if(strcmp(func_name, strtab[symtab[i].st_name])) {
+        const char* strname = (const char*)malloc(sizeof(strtab.sh_entsize));
+        fseek(exe, strtab.sh_entsize, SEEK_CUR);
+        fread(&strname, sizeof(strname), 1, exe);
+        if(strcmp(func_name, strname)) {
             if (strcmp(ELF64_ST_BIND(symtab[i].st_info), GLOBAL) == 0) {
                 *address = getAddress(func_name, &symtab[i], header);
+                free(strtab);
                 return FOUND_IN_SYMTAB_AND_GLOBAL;
             }
-            else
+            else {
                 return FOUND_IN_SYMTAB_BUT_LOCAL;
+                free(strtab);
+            }
         }
     }
+    free(strtab);
     return NOT_FOUND_IN_SYMTAB;
 }
 
