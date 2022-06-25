@@ -89,9 +89,9 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
     }
 
     if(not_found) {
-        return NOT_FOUND_IN_SYMTAB;
-        printf("SHIT");
         free(strtab);
+        printf("SHIT\n");
+        return NOT_FOUND_IN_SYMTAB;
     }
 
     fseek(exe, strtab->sh_size, SEEK_SET);
