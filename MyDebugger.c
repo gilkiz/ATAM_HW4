@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 {
     char* func_name = argv[0]; //maybe inddex 1
     char* program = argv[1];
-    Elf64_Ehdr header = (Elf64_Ehdr)malloc(sizeof(Elf64_Ehdr));
+    Elf64_Ehdr* header = (Elf64_Ehdr*)malloc(sizeof(Elf64_Ehdr));
     FILE* exe = fopen(program, "r");
     fread(&header, sizeof(header), 1, exe);
     if(!isExe(&header)) {
@@ -71,7 +71,7 @@ int isExe(Elf64_Ehdr* header) {
 int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* address) {
     Elf64_Shdr* sec_table = (Elf64_Shdr*)((char*)header + header->e_shoff);
     fseek(exe, header->e_shstrndx, SEEK_SET);
-    Elf64_Shdr strtab = (Elf64_Shdr)malloc(sizeof(Elf64_Shdr));
+    Elf64_Shdr* strtab = (Elf64_Shdr*)malloc(sizeof(Elf64_Shdr));
     fread(&strtab, sizeof(strtab), 1, exe);
     Elf64_Sym *symtab;
     int symbol_table_size;
