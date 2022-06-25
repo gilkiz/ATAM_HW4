@@ -29,11 +29,12 @@ Elf64_Addr getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header);
 
 int main(int argc, char* argv[]) 
 {
+    
     char* func_name = argv[0]; //maybe inddex 1
     char* program = argv[1];
     Elf64_Ehdr* header = (Elf64_Ehdr*)malloc(sizeof(Elf64_Ehdr));
     FILE* exe = fopen(program, "r");
-    fread(&header, sizeof(header), 1, exe);
+    fread(header, sizeof(*header), 1, exe);
     if(!isExe(header)) {
         printf("PRF:: %s not an executable! :(\n", header->e_ident);
         fclose(exe);
