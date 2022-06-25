@@ -16,19 +16,21 @@
 #define FOUND_IN_SYMTAB_AND_GLOBAL 2
 #define FAILURE 1
 #define SUCCESS 0
-#define UNDEFINED "UND"
+#define UNDEFINED 0 //from stackoverflow- not sure if this is right!!
 
 /********************************
  *          Functions           *
  ********************************/
 int isExe(Elf64_Ehdr* header);
-int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr* address);
-Elf64_Addr* getAddress(char* func, Elf64_Sym *symtab, Elf64_Ehdr* header);
+int funcExists(char* func_name, Elf64_Ehdr* header, Elf64_Addr* address);
+Elf64_Addr* getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header);
 
-int main(char* func, char* file) 
+int main(int argc, char* argv[]) 
 {
+    char* func_name = argv[1];
+    char* program = argv[2];
     Elf64_Ehdr header;
-    FILE* exe = fopen(func, "r");
+    FILE* exe = fopen(program, "r");
     fread(&header, sizeof(header), 1, exe);
     if(!isExe(&header)) {
         printf("PRF:: %s not an executable! :(\n", header.e_ident);
@@ -38,19 +40,23 @@ int main(char* func, char* file)
 
     Elf64_Addr* address;
 
-    int funcExistness = funcExists(func, &header, address);
+    int funcExistness = funcExists(func_name, &header, address);
     if(funcExistness == NOT_FOUND_IN_SYMTAB) {
-        printf("PRF:: %s not found!\n", func);
+        printf("PRF:: %s not found!\n", func_name);
         fclose(exe);
         return FAILURE;
     }
     else if(funcExistness == FOUND_IN_SYMTAB_BUT_LOCAL) {
-        printf("PRF:: %s is not a global symbol! :(\n", func);
+        printf("PRF:: %s is not a global symbol! :(\n", func_name);
         fclose(exe);
         return FAILURE;
     }
     
-    // if we're here then address is initialized
+    // if we're here then address is initialized (allegedly)
+
+    //starting debug
+
+
 
     fclose(exe);
     return SUCCESS;
@@ -62,7 +68,7 @@ int isExe(Elf64_Ehdr* header) {
     return IS_EXE;
 }
 
-int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr* address) {
+int funcExists(char* func_name, Elf64_Ehdr* header, Elf64_Addr* address) {
     Elf64_Shdr* sec_table = (Elf64_Shdr*)((char*)header + header->e_shoff);
     Elf64_Sym *symtab;
     int symbol_table_size;
@@ -83,9 +89,9 @@ int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr* address) {
 
     
     for(int i = 0; i < symbol_table_size; i++) {
-        if(strcmp(func, symtab[i].st_name)) {
+        if(strcmp(func_name, symtab[i].st_name)) {
             if (strcmp(ELF64_ST_BIND(symtab[i].st_info), GLOBAL) == 0) {
-                *address = getAddress(func, &symtab[i], header);
+                *address = getAddress(func_name, &symtab[i], header);
                 return FOUND_IN_SYMTAB_AND_GLOBAL;
             }
             else
@@ -95,7 +101,7 @@ int funcExists(char* func, Elf64_Ehdr* header, Elf64_Addr* address) {
     return NOT_FOUND_IN_SYMTAB;
 }
 
-Elf64_Addr* getAddress(char* func, Elf64_Sym *symtab, Elf64_Ehdr* header) {
+Elf64_Addr* getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header) {
     if(symtab->st_shndx != UNDEFINED) {
         return symtab->st_value;
     }
@@ -115,7 +121,7 @@ Elf64_Addr* getAddress(char* func, Elf64_Sym *symtab, Elf64_Ehdr* header) {
 
         for(int j=0; j<dynamic_symbol_size; j++)
         {
-            if(strcmp(dynsym[j].d_tag, func) == 0)
+            if(strcmp(dynsym[j].d_tag, func_name) == 0)
             {
                 return dynsym[j].d_un.d_ptr;
             }
