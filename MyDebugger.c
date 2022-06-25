@@ -94,7 +94,7 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
         free(strtab);
     }
 
-    fseek(exe, *strtab, SEEK_SET);
+    fseek(exe, strtab->sh_size, SEEK_SET);
     for(int i = 0; i < symbol_table_size; i++) {
         const char* strname = (const char*)malloc(sizeof(strtab->sh_entsize));
         fseek(exe, strtab->sh_entsize, SEEK_CUR);
@@ -135,7 +135,7 @@ Elf64_Addr getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header) {
 
         for(int j=0; j<dynamic_symbol_size; j++)
         {
-            if(strcmp(dynsym[j].d_tag, func_name) == 0)
+            if(strcmp("dynsym[j].d_tag", func_name) == 0) //bad!!!!! 
             {
                 return dynsym[j].d_un.d_ptr;
             }
