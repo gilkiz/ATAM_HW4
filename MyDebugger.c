@@ -22,7 +22,7 @@
  *          Functions           *
  ********************************/
 int isExe(Elf64_Ehdr* header);
-int funcExists(char* func_name, Elf64_Ehdr* header, Elf64_Addr* address);
+int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* address);
 Elf64_Addr* getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header);
 
 int main(int argc, char* argv[]) 
@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 
     Elf64_Addr* address;
 
-    int funcExistness = funcExists(func_name, &header, address);
+    int funcExistness = funcExists(func_name, &header, exe, address);
     if(funcExistness == NOT_FOUND_IN_SYMTAB) {
         printf("PRF:: %s not found!\n", func_name);
         fclose(exe);
@@ -68,9 +68,11 @@ int isExe(Elf64_Ehdr* header) {
     return IS_EXE;
 }
 
-int funcExists(char* func_name, Elf64_Ehdr* header, Elf64_Addr* address) {
+int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* address) {
     Elf64_Shdr* sec_table = (Elf64_Shdr*)((char*)header + header->e_shoff);
-    Elf64_Half* strtab = header->e_shstrndx;
+    fseek(exe, header->e_shstrndx, SEEK_SET);
+    Elf64_Shdr* strtab;
+    fread(&strtab, sizeof(strtab), 1, exe);
     Elf64_Sym *symtab;
     int symbol_table_size;
     int not_found = 0;
