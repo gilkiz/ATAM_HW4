@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     FILE* exe = fopen(program, "r");
     fread(&header, sizeof(header), 1, exe);
     if(!isExe(&header)) {
-        printf("PRF:: %s not an executable! :(\n", header.e_ident);
+        printf("PRF:: %s not an executable! :(\n", header->e_ident);
         fclose(exe);
         return FAILURE;
     }
@@ -94,8 +94,8 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
 
     fseek(exe, strtab, SEEK_SET);
     for(int i = 0; i < symbol_table_size; i++) {
-        const char* strname = (const char*)malloc(sizeof(strtab.sh_entsize));
-        fseek(exe, strtab.sh_entsize, SEEK_CUR);
+        const char* strname = (const char*)malloc(sizeof(strtab->sh_entsize));
+        fseek(exe, strtab->sh_entsize, SEEK_CUR);
         fread(&strname, sizeof(strname), 1, exe);
         if(strcmp(func_name, strname)) {
             if (strcmp(ELF64_ST_BIND(symtab[i].st_info), GLOBAL) == 0) {
