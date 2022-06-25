@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
     FILE* exe = fopen(program, "r");
     fread(header, sizeof(*header), 1, exe);
     if(isExe(header) == IS_NOT_EXE) {
-        printf("PRF:: %s not an executable! :(\n", header->e_ident);
+        printf("PRF:: %s not an executable! :(\n", argv[2]);
         fclose(exe);
         return FAILURE;
     }
