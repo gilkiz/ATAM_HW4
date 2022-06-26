@@ -140,8 +140,10 @@ void run_our_debugger(pid_t child_pid, bool is_function_static, Elf64_Addr funct
         ptrace(PTRACE_POKETEXT, child_pid, (void*)function_address, (void*)data_trap);
         ptrace(PTRACE_CONT, child_pid, NULL, NULL);
         wait(&wait_status);
+        printf("1");
         if(!WIFEXITED(wait_status))
         {
+            printf("2");
             ptrace(PTRACE_GETREGS, child_pid, NULL, &regs);
             ptrace(PTRACE_POKETEXT, child_pid, (void*)jump_to_function, (void*)data);
             call_counter++;
@@ -154,6 +156,7 @@ void run_our_debugger(pid_t child_pid, bool is_function_static, Elf64_Addr funct
             ptrace(PTRACE_POKETEXT, child_pid, (void*)adress_in_top_stack, (void*)data2_trap);
             ptrace(PTRACE_CONT, child_pid, NULL, NULL);
             wait(&wait_status);
+            printf("3");
             ptrace(PTRACE_GETREGS, child_pid, NULL, &regs);
             print_function(regs,call_counter);
             ptrace(PTRACE_POKETEXT, child_pid, (void*)adress_in_top_stack, (void*)data2);
