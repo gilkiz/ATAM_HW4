@@ -6,7 +6,10 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include "user.h"
+#include <sys/ptrace.h>
+#include <sys/wait.h>
+#include <sys/user.h>
+
 /********************************
  *          Our Macros          *
  ********************************/
@@ -120,7 +123,7 @@ void run_our_debugger(pid_t child_pid, bool is_function_static, Elf64_Addr funct
     if(is_function_static)
     {
         long data = ptrace(PTRACE_PEEKTEXT, child_pid, (void*)function_address, NULL);
-        Elf64_Addr data_trap = (data &FFFFFFFFFFFFFF00) | 0xCC ;
+        Elf64_Addr data_trap = (data & 0xFFFFFFFFFFFFFF00) | 0xCC ;
         ptrace(PTRACE_POKETEXT, child_pid, (void*)function_address, (void*)data_trap);
         wait(&wait_status);
         while(WIFSTOPPED(wait_status))
@@ -165,11 +168,11 @@ bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_
             return false;
         }
         
-        res=fseek(file_copy,header.e_shoff,SEEK_SET);
+        res=fseek(file2,header.e_shoff,SEEK_SET);
         bool to_stop = false;
         for(int i=0; i<header.e_shnum; i++)
         {
-            fread(&itsh, sizeof(itsh), 1, file_copy);
+            fread(&itsh, sizeof(itsh), 1, file2);
             if(itsh.sh_type==0x3)//SHT_STRTAB
             {
                 res=fseek(file,shstrtab.sh_offset+itsh.sh_name,SEEK_SET);
@@ -180,7 +183,7 @@ bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_
                 }
                 if(strcmp(shstr_name, ".dynstr")==0)
                 {
-                    dynstroff = itsh.sh_offset;
+                    dynstr_offset = itsh.sh_offset;
                 }
             }
             else if(itsh.sh_type == 2)
@@ -205,14 +208,14 @@ bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_
             }
         }
 
-        res=fseek(file_copy,sym_offset,SEEK_SET);
+        res=fseek(file2,sym_offset,SEEK_SET);
         Elf64_Sym itsym;
         Elf64_Addr static_addr;
         char * sym_name = (char*)malloc(strlen(func_name)+1);
         bool is_global=false;
         for(int i=0; i<(symsize/sizeof(Elf64_Sym)); i++)
         {
-            fread(&itsym, sizeof(itsym), 1, file_copy);
+            fread(&itsym, sizeof(itsym), 1, file2);
             res=fseek(file,strtab_offset+itsym.st_name,SEEK_SET);
             fgets(sym_name, strlen(func_name)+2, file); //maybe without &
             if(sym_name!="" && strcmp(sym_name, func_name) == 0)
@@ -232,7 +235,7 @@ bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_
         }
 
         fclose(file);
-        fclose(file_copy);
+        fclose(file2);
         free(sym_name);
         if(is_global)
         {
