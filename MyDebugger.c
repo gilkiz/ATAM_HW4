@@ -115,7 +115,7 @@ pid_t run_target(const char* program_address)
 
 void print_function(struct user_regs_struct reg, int call_counter)
 {
-    printf("PRF:: run #%d returned with %d\n", call_counter, reg.rax);
+    printf("PRF:: run #%d returned with %lld\n", call_counter, reg.rax);
 }
 
 void run_our_debugger(pid_t child_pid, bool is_function_static, Elf64_Addr function_address)
