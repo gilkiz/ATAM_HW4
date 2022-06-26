@@ -121,7 +121,7 @@ void run_our_debugger(pid_t child_pid, bool is_function_static, Elf64_Addr funct
     int wait_status;
     int call_counter = 0;
     struct user_regs_struct regs;
-
+    printf("1");
     //find all adresses
 
     if(is_function_static) //STATIC
