@@ -28,6 +28,7 @@ int isExe(Elf64_Ehdr* header);
 int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* address);
 bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_static);
 Elf64_Addr getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header);
+Elf64_Addr stage5(char* elf_file, char* func_name, Elf64_Off dynsymoff, Elf64_Xword dynsymsize, Elf64_Off dynstroff,Elf64_Off reladynoff, Elf64_Xword reladynsize);
 
 int main(int argc, char* argv[]) 
 {
@@ -49,7 +50,7 @@ int main(int argc, char* argv[])
     Elf64_Addr* address;
     bool is_funciton_static;
 
-    if(checkFunc(argv[2], argv[1], &address, &is_funciton_static))
+    if(checkFunc(argv[2], argv[1], address, &is_funciton_static))
     {
         //do something
     }
