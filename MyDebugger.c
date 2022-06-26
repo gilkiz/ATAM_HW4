@@ -26,6 +26,7 @@
  ********************************/
 int isExe(Elf64_Ehdr* header);
 int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* address);
+bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_static);
 Elf64_Addr getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header);
 
 int main(int argc, char* argv[]) 
@@ -46,7 +47,15 @@ int main(int argc, char* argv[])
     }
 
     Elf64_Addr* address;
+    bool is_funciton_static;
 
+    if(checkFunc(argv[2], argv[1], &address, &is_funciton_static))
+    {
+        //do something
+    }
+
+
+    /*
     int funcExistness = funcExists(func_name, header, exe, address);
     if(funcExistness == NOT_FOUND_IN_SYMTAB) {
         printf("PRF:: %s not found!\n", func_name);
@@ -60,6 +69,7 @@ int main(int argc, char* argv[])
         free(header);
         return FAILURE;
     }
+    */
     
     // if we're here then address is initialized (allegedly)
 
