@@ -102,7 +102,7 @@ pid_t run_target(const char* executble_to_run)
             perror("ptrace");
             exit(1);
         }
-        execl(program_address, program_address, NULL);
+        execl(executble_to_run, executble_to_run, NULL);
     }
     else
     {
