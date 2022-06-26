@@ -35,6 +35,7 @@ int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* addres
 bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_static, bool* found_but_not_global);
 Elf64_Addr getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header);
 Elf64_Addr stage5(char* elf_file, char* func_name, Elf64_Off dynsymoff, Elf64_Xword dynsymsize, Elf64_Off dynstroff,Elf64_Off reladynoff, Elf64_Xword reladynsize);
+void our_debug_aux(pid_t child_pid, Elf64_Addr function_address, int call_counter);
 
 int main(int argc, char* argv[]) 
 {
@@ -114,7 +115,7 @@ pid_t run_target(const char* program_address)
 
 void print_function(struct user_regs_struct reg, int call_counter)
 {
-    printf("PRF:: run #%lld returned with %d\n", call_counter, reg.rax);
+    printf("PRF:: run #%d returned with %d\n", call_counter, reg.rax);
 }
 
 void run_our_debugger(pid_t child_pid, bool is_function_static, Elf64_Addr function_address)
@@ -158,7 +159,7 @@ void run_our_debugger(pid_t child_pid, bool is_function_static, Elf64_Addr funct
             ptrace(PTRACE_GETREGS, child_pid, NULL, &regs);
             print_function(regs,call_counter);
             ptrace(PTRACE_POKETEXT, child_pid, (void*)adress_in_top_stack, (void*)data2);
-            ress.rip--;
+            regs.rip--;
             ptrace(PTRACE_SETREGS, child_pid, NULL, &regs); 
 
             Elf64_Addr real_address = ptrace(PTRACE_PEEKTEXT, child_pid, (void*) function_address, NULL);
@@ -200,7 +201,7 @@ void our_debug_aux(pid_t child_pid, Elf64_Addr function_address, int call_counte
 
         ptrace(PTRACE_POKETEXT, child_pid, (void*)function_address, (void*)data_trap);
         ptrace(PTRACE_CONT, child_pid, NULL, NULL);
-        whit(&wait_status);
+        wait(&wait_status);
     }
 }
 
