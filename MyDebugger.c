@@ -112,6 +112,11 @@ pid_t run_target(const char* program_address)
     }
 }
 
+void print_function(struct user_regs_struct reg, int call_counter)
+{
+    printf("PRF:: run #%lld returned with %d\n", call_counter, reg.rax);
+}
+
 void run_our_debugger(pid_t child_pid, bool is_function_static, Elf64_Addr function_address)
 {
     int wait_status;
@@ -120,20 +125,82 @@ void run_our_debugger(pid_t child_pid, bool is_function_static, Elf64_Addr funct
 
     //find all adresses
 
-    if(is_function_static)
+    if(is_function_static) //STATIC
     {
-        long data = ptrace(PTRACE_PEEKTEXT, child_pid, (void*)function_address, NULL);
-        Elf64_Addr data_trap = (data & 0xFFFFFFFFFFFFFF00) | 0xCC ;
-        ptrace(PTRACE_POKETEXT, child_pid, (void*)function_address, (void*)data_trap);
+        int wait_status;
         wait(&wait_status);
-        while(WIFSTOPPED(wait_status))
-        {
-
-        }
+        our_debug_aux(child_pid, function_address,call_counter);
     }
     else //GLOBAL 
     {
+        Elf64_Addr jump_to_function;
+        wait(&wait_status);
+        jump_to_function = ptrace(PTRACE_PEEKTEXT, child_pid, (void*)function_address, NULL);
+        long data = ptrace(PTRACE_PEEKTEXT, child_pid, (void*)jump_to_function, NULL);
+        long data_trap = (data & 0xFFFFFFFFFFFFFF00) | 0xCC ;
+        ptrace(PTRACE_POKETEXT, child_pid, (void*)function_address, (void*)data_trap);
+        ptrace(PTRACE_CONT, child_pid, NULL, NULL);
+        wait(&wait_status);
+        if(!WIFEXITED(wait_status))
+        {
+            ptrace(PTRACE_GETREGS, child_pid, NULL, &regs);
+            ptrace(PTRACE_POKETEXT, child_pid, (void*)jump_to_function, (void*)data);
+            call_counter++;
+            regs.rip--;
+            ptrace(PTRACE_SETREGS, child_pid, NULL, &regs);
 
+            Elf64_Addr adress_in_top_stack = ptrace(PTRACE_PEEKTEXT, child_pid, (void*)regs.rsp, NULL);
+            long data2 = ptrace(PTRACE_PEEKTEXT, child_pid, (void*)adress_in_top_stack,NULL);
+            long data2_trap = (data2 & 0xFFFFFFFFFFFFFF00) | 0xCC ;
+            ptrace(PTRACE_POKETEXT, child_pid, (void*)adress_in_top_stack, (void*)data2_trap);
+            ptrace(PTRACE_CONT, child_pid, NULL, NULL);
+            wait(&wait_status);
+            ptrace(PTRACE_GETREGS, child_pid, NULL, &regs);
+            print_function(regs,call_counter);
+            ptrace(PTRACE_POKETEXT, child_pid, (void*)adress_in_top_stack, (void*)data2);
+            ress.rip--;
+            ptrace(PTRACE_SETREGS, child_pid, NULL, &regs); 
+
+            Elf64_Addr real_address = ptrace(PTRACE_PEEKTEXT, child_pid, (void*) function_address, NULL);
+            our_debug_aux(child_pid, real_address, call_counter);
+        }
+
+    }
+}
+
+void our_debug_aux(pid_t child_pid, Elf64_Addr function_address, int call_counter)
+{
+    int wait_status;
+    struct user_regs_struct regs;
+    long data = ptrace(PTRACE_PEEKTEXT, child_pid, (void*)function_address, NULL);
+    long data_trap = (data & 0xFFFFFFFFFFFFFF00) | 0xCC ;
+    ptrace(PTRACE_POKETEXT, child_pid, (void*)function_address, (void*)data_trap);
+    ptrace(PTRACE_CONT, child_pid, NULL, NULL);
+    wait(&wait_status);
+    while(!WIFEXITED(wait_status))
+    {
+        call_counter++;
+        ptrace(PTRACE_GETREGS, child_pid, NULL, &regs);
+        regs.rip--;
+        ptrace(PTRACE_POKETEXT, child_pid, (void*)function_address, (void*)data);
+        ptrace(PTRACE_SETREGS, child_pid, NULL, &regs);
+        
+        Elf64_Addr adress_in_top_stack = ptrace(PTRACE_PEEKTEXT, child_pid, (void*)regs.rsp, NULL);
+        long data_of_caller = ptrace(PTRACE_PEEKTEXT, child_pid, (void*)adress_in_top_stack, NULL);
+        long data_of_caller_trap = (data_of_caller & 0xFFFFFFFFFFFFFF00) | 0xCC ;
+        ptrace(PTRACE_POKETEXT, child_pid, (void*)adress_in_top_stack, (void*)data_of_caller_trap);
+        ptrace(PTRACE_CONT, child_pid, NULL, NULL);
+        wait(&wait_status);
+        ptrace(PTRACE_GETREGS, child_pid, NULL, &regs);
+        print_function(regs, call_counter);
+
+        regs.rip--;
+        ptrace(PTRACE_POKETEXT, child_pid, (void*)adress_in_top_stack, (void*)data_of_caller);
+        ptrace(PTRACE_SETREGS, child_pid, NULL, &regs);
+
+        ptrace(PTRACE_POKETEXT, child_pid, (void*)function_address, (void*)data_trap);
+        ptrace(PTRACE_CONT, child_pid, NULL, NULL);
+        whit(&wait_status);
     }
 }
 
