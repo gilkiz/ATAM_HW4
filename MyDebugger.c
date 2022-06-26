@@ -3,7 +3,10 @@
 #include <string.h>
 #include <stdbool.h>
 #include "elf64.h"
-
+#include <signal.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include "user.h"
 /********************************
  *          Our Macros          *
  ********************************/
@@ -82,6 +85,55 @@ int main(int argc, char* argv[])
     return SUCCESS;
 }
 
+pid_t run_target(const char* program_address)
+{
+    pid_t pid;
+    pid = fork();
+    if(pid > 0)
+    {
+        return pid;
+    }
+    else if(pid == 0)
+    {
+        if(ptrace(PTRACE_TRACEME, 0, NULL, NULL))
+        {
+            perror("ptrace");
+            exit(1);
+        }
+        execl(program_address, program_address, NULL);
+    }
+    else
+    {
+        perror("fork");
+        exit(1);
+    }
+}
+
+void run_our_debugger(pid_t child_pid, bool is_function_static, Elf64_Addr function_address)
+{
+    int wait_status;
+    int call_counter = 0;
+    struct user_regs_struct regs;
+
+    //find all adresses
+
+    if(is_function_static)
+    {
+        long data = ptrace(PTRACE_PEEKTEXT, child_pid, (void*)function_address, NULL);
+        Elf64_Addr data_trap = (data &FFFFFFFFFFFFFF00) | 0xCC ;
+        ptrace(PTRACE_POKETEXT, child_pid, (void*)function_address, (void*)data_trap);
+        wait(&wait_status);
+        while(WIFSTOPPED(wait_status))
+        {
+
+        }
+    }
+    else //GLOBAL 
+    {
+
+    }
+}
+
 int isExe(Elf64_Ehdr* header) {
     if(header->e_type != ET_EXEC)
         return IS_NOT_EXE;
@@ -92,14 +144,14 @@ bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_
 {
     Elf64_Ehdr header;
     FILE* file = fopen(elf_file, "rb");
-    FILE* file_copy = fopen(elf_file, "rb");
+    FILE* file2 = fopen(elf_file, "rb");
 
     bool is_func=false;
     Elf64_Shdr shstrtab, itsh;
     char shstr_name[11];
-    Elf64_Off strtaboff, symoff, dynsymoff, dynstroff, reladynoff;
+    Elf64_Off strtab_offset, sym_offset, dynsym_offset, dynstr_offset, reladyn_offset;
     Elf64_Xword symsize, dynsymsize,reladynsize;
-    if(file && file_copy)
+    if(file && file2)
     {
         fread(&header, sizeof(header), 1, file);
         int res=fseek(file,header.e_shoff+header.e_shstrndx*header.e_shentsize,SEEK_SET);
@@ -124,42 +176,36 @@ bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_
                 fgets(shstr_name, sizeof(shstr_name), file); //maybe without &
                 if(strcmp(shstr_name, ".strtab") == 0)
                 {
-                    strtaboff = itsh.sh_offset;
-                   // if(to_stop == true)
-                    //    break;
-                   // to_stop = true;
+                    strtab_offset = itsh.sh_offset;
                 }
                 if(strcmp(shstr_name, ".dynstr")==0)
                 {
                     dynstroff = itsh.sh_offset;
                 }
             }
-            else if(itsh.sh_type == 0x2)//SHR_SYMTAB
+            else if(itsh.sh_type == 2)
             {
-                symoff = itsh.sh_offset;
+                sym_offset = itsh.sh_offset;
                 symsize = itsh.sh_size;
-               // if(to_stop == true)
-                //    break;
-                //to_stop = true;
             }
-            else if(itsh.sh_type == 0x0B) // SHT_DYNSYM
+            else if(itsh.sh_type == 11) 
             {
-                dynsymoff = itsh.sh_offset;
+                dynsym_offset = itsh.sh_offset;
                 dynsymsize = itsh.sh_size;
             }
-            else if(itsh.sh_type == 0x04) // RELA
+            else if(itsh.sh_type == 4) 
             {
                 res=fseek(file,shstrtab.sh_offset+itsh.sh_name,SEEK_SET);
                 fgets(shstr_name, sizeof(shstr_name), file); //maybe without &
                 if(strcmp(shstr_name, ".rela.plt")==0)
                 {
-                    reladynoff = itsh.sh_offset;
+                    reladyn_offset = itsh.sh_offset;
                     reladynsize = itsh.sh_size;
                 }
             }
         }
 
-        res=fseek(file_copy,symoff,SEEK_SET);
+        res=fseek(file_copy,sym_offset,SEEK_SET);
         Elf64_Sym itsym;
         Elf64_Addr static_addr;
         char * sym_name = (char*)malloc(strlen(func_name)+1);
@@ -167,16 +213,13 @@ bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_
         for(int i=0; i<(symsize/sizeof(Elf64_Sym)); i++)
         {
             fread(&itsym, sizeof(itsym), 1, file_copy);
-            res=fseek(file,strtaboff+itsym.st_name,SEEK_SET);
+            res=fseek(file,strtab_offset+itsym.st_name,SEEK_SET);
             fgets(sym_name, strlen(func_name)+2, file); //maybe without &
             if(sym_name!="" && strcmp(sym_name, func_name) == 0)
             {
                 if(ELF64_ST_BIND(itsym.st_info)==1)
                 {
                     static_addr = itsym.st_value; 
-                   // fclose(file);
-                   // fclose(file_copy);
-                    //free(sym_name);
                     is_global = true;
                     break;
                 }
@@ -185,19 +228,17 @@ bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_
                     *found_but_not_global = true;
                     return false;
                 }
-
             }
         }
 
         fclose(file);
         fclose(file_copy);
         free(sym_name);
-        //Elf64_Addr addr_func;
         if(is_global)
         {
             if(itsym.st_shndx == 0) //stage 5
             {
-                *addr_func = stage5(elf_file,func_name,dynsymoff, dynsymsize,dynstroff,reladynoff,reladynsize);
+                *addr_func = stage5(elf_file,func_name,dynsym_offset, dynsymsize,dynstr_offset,reladyn_offset,reladynsize);
                 *is_static = false;
             }
             else //stage 6
@@ -263,6 +304,7 @@ Elf64_Addr stage5(char* elf_file, char* func_name, Elf64_Off dynsymoff, Elf64_Xw
     fclose(file_copy);
     return -1;
 }
+
 
 /*
 int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* address) {
