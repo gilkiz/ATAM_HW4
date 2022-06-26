@@ -59,8 +59,9 @@ int main(int argc, char* argv[])
     bool function_is_OK = checkFunc(argv[2], argv[1], address, &is_funciton_static, &found_but_not_global);
 
     if(function_is_OK)
-    {
-        //do something
+    {        
+        int child_pid = run_target(address);
+        run_our_debugger(child_pid, is_funciton_static, *address);
     }
     else // function is not OK 
     { 
@@ -78,11 +79,6 @@ int main(int argc, char* argv[])
         return FAILURE;
     }
     
-    // if we're here then address is initialized (allegedly)
-
-    //starting debug
-
-
 
     fclose(exe);
     free(header);
