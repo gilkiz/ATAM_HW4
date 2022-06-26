@@ -26,7 +26,7 @@
  ********************************/
 int isExe(Elf64_Ehdr* header);
 int funcExists(char* func_name, Elf64_Ehdr* header,FILE* exe, Elf64_Addr* address);
-bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_static);
+bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_static, bool* found_but_not_global);
 Elf64_Addr getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header);
 Elf64_Addr stage5(char* elf_file, char* func_name, Elf64_Off dynsymoff, Elf64_Xword dynsymsize, Elf64_Off dynstroff,Elf64_Off reladynoff, Elf64_Xword reladynsize);
 
@@ -48,29 +48,28 @@ int main(int argc, char* argv[])
     }
 
     Elf64_Addr* address;
-    bool is_funciton_static;
+    bool is_funciton_static, found_but_not_global;
+    bool function_is_OK = checkFunc(argv[2], argv[1], address, &is_funciton_static, &found_but_not_global);
 
-    if(checkFunc(argv[2], argv[1], address, &is_funciton_static))
+    if(function_is_OK)
     {
         //do something
     }
-
-
-    /*
-    int funcExistness = funcExists(func_name, header, exe, address);
-    if(funcExistness == NOT_FOUND_IN_SYMTAB) {
+    else // function is not OK 
+    { 
+        if(found_but_not_global)
+        {//found but not global
+            printf("PRF:: %s is not a global symbol! :(\n", func_name);
+            fclose(exe);
+            free(header);
+            return FAILURE;
+        }
+        //not found at all
         printf("PRF:: %s not found!\n", func_name);
         fclose(exe);
         free(header);
         return FAILURE;
     }
-    else if(funcExistness == FOUND_IN_SYMTAB_BUT_LOCAL) {
-        printf("PRF:: %s is not a global symbol! :(\n", func_name);
-        fclose(exe);
-        free(header);
-        return FAILURE;
-    }
-    */
     
     // if we're here then address is initialized (allegedly)
 
@@ -89,7 +88,7 @@ int isExe(Elf64_Ehdr* header) {
     return IS_EXE;
 }
 
-bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_static)
+bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_static, bool* found_but_not_global)
 {
     Elf64_Ehdr header;
     FILE* file = fopen(elf_file, "rb");
@@ -183,10 +182,7 @@ bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_
                 }
                 else
                 {
-                    printf("PRF:: %s is not a global symbol! :(\n",func_name);
-                    fclose(file);
-                    fclose(file_copy);
-                    free(sym_name);
+                    *found_but_not_global = true;
                     return false;
                 }
 
@@ -212,7 +208,7 @@ bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_
             return true;
         }
 
-        printf("PRF:: %s not found!\n",func_name);
+        *found_but_not_global = false;
         return false;
     }
 
