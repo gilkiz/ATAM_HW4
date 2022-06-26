@@ -36,7 +36,7 @@ bool checkFunc(char* elf_file, char* func_name, Elf64_Addr* addr_func, bool* is_
 Elf64_Addr getAddress(char* func_name, Elf64_Sym *symtab, Elf64_Ehdr* header);
 Elf64_Addr stage5(char* elf_file, char* func_name, Elf64_Off dynsymoff, Elf64_Xword dynsymsize, Elf64_Off dynstroff,Elf64_Off reladynoff, Elf64_Xword reladynsize);
 void our_debug_aux(pid_t child_pid, Elf64_Addr function_address, int call_counter);
-pid_t run_target(Elf64_Addr program_address);
+pid_t run_target(const char* executble_to_run);
 void run_our_debugger(pid_t child_pid, bool is_function_static, Elf64_Addr function_address);
 
 int main(int argc, char* argv[]) 
@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
 
     if(function_is_OK)
     {        
-        int child_pid = run_target(address);
+        int child_pid = run_target(argv[2]);
         run_our_debugger(child_pid, is_funciton_static, *address);
     }
     else // function is not OK 
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
     return SUCCESS;
 }
 
-pid_t run_target(Elf64_Addr program_address)
+pid_t run_target(const char* executble_to_run)
 {
     pid_t pid;
     pid = fork();
